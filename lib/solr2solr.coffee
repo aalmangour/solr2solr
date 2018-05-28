@@ -1,17 +1,29 @@
 path = require 'path'
 solr = require 'solr'
 _ =    require 'underscore'
+extend = require('util')._extend;
 
 class SolrToSolr
 
   go: (@config) ->
     @sourceClient = solr.createClient(@config.from)
     @destClient   = solr.createClient(@config.to)
-    @nextBatch(@config.start)
 
-  nextBatch: (start) ->
+    @config.start = @config.start || 0
+    @config.params = @config.params || {}
+    @config.params = @config.params || {}
+
+    @nextBatch(@config.start, @config.params)
+
+  nextBatch: (start, params) ->
+    
     console.log "Querying starting at #{start}"
-    @sourceClient.query @config.query, {rows:@config.rows, start:start}, (err, response) =>
+    
+    newParams = extend(params, {rows: @config.rows, start:start});
+
+    console.log(newParams)
+
+    @sourceClient.query @config.query, newParams, (err, response) =>
       return console.log "Some kind of solr query error #{err}" if err?
       responseObj = JSON.parse response
 
@@ -19,7 +31,7 @@ class SolrToSolr
       @writeDocuments newDocs, =>
         start += @config.rows
         if responseObj.response.numFound > start
-          @nextBatch(start)
+          @nextBatch(start, newParams)
         else
           @destClient.commit()
 
@@ -37,6 +49,9 @@ class SolrToSolr
       for fab in @config.fabricate
         vals = fab.fabricate(newDoc, start)
         newDoc[fab.name] = vals if vals?
+      for exclude in @config.exclude
+        delete newDoc[exclude]
+
       start++
       newDoc
 
@@ -45,6 +60,7 @@ class SolrToSolr
     docs.push documents
     if @config.duplicate.enabled
       for doc in documents
+        console.log documents
         for num in [0..@config.duplicate.numberOfTimes]
           newDoc = _.extend({}, doc)
           newDoc[@config.duplicate.idField] = "#{doc[@config.duplicate.idField]}-#{num}"

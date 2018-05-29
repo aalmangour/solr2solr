@@ -93,6 +93,9 @@ exports.config =
 
   # When true copy is ignored and documents are copied verbatim
   clone: true
+  
+  # When true location field is added as latlng
+  location: true
 
   # When you need to pass any additional parameters to the request to solr
   params:

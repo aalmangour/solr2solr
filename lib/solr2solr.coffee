@@ -51,7 +51,7 @@ class SolrToSolr
         newDoc[fab.name] = vals if vals?
       for exclude in @config.exclude
         delete newDoc[exclude]
-       # newDoc['latlng'] = '25.313973,40.372682'
+        newDoc['latlng'] = doc['Latitude'] + ', ' + doc['Longitude']
 
       start++
       newDoc
